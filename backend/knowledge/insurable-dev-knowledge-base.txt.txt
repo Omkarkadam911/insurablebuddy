@@ -1,0 +1,269 @@
+INSURABLE.DEV — VOICEFLOW KNOWLEDGE BASE
+
+This knowledge base contains structured information about Insurable.dev, its products, value proposition, problems it solves, solutions, use cases, and contact process. It is designed for AI agents to answer questions accurately about Insurable.dev.
+
+==================================================
+GETTING STARTED
+==================================================
+
+Upload this file into the Voiceflow Knowledge Base as a single document.
+This content is optimized for retrieval, sales enablement, and product explanation.
+
+==================================================
+ABOUT INSURABLE.DEV
+==================================================
+
+Insurable.dev provides AI agents for life insurance distribution.
+
+The core mission of Insurable.dev is to decouple premium growth from headcount by scaling insurance distribution with autonomous AI agents.
+
+The platform focuses on:
+- Automating lead qualification
+- Accelerating underwriting
+- Empowering human agents to close more deals
+
+Insurable.dev enables 24/7 availability, built-in compliance, and scalable insurance operations using autonomous AI systems.
+
+==================================================
+CORE VALUE PROPOSITION
+==================================================
+
+Insurable.dev helps insurance organizations scale without hiring more agents.
+
+Autonomous AI agents handle lead qualification, outbound engagement, speed-to-lead, and underwriting support so human agents spend more time closing high-intent prospects instead of performing repetitive outreach and filtering tasks.
+
+The result is higher appointment volume, faster conversions, and lower customer acquisition cost.
+
+==================================================
+KEY ADVANTAGES
+==================================================
+
+DIGITAL SDR (OUTBOUND QUALIFICATION AT SCALE)
+
+Insurable.dev offers a Digital SDR model where AI agents:
+- Handle 100% of outbound dialing
+- Engage leads in natural voice or chat conversations
+- Qualify prospects automatically
+- Filter out unqualified leads
+- Hand off qualified opportunities to human agents
+
+This approach is positioned to double appointment volume while eliminating time spent on low-intent leads.
+
+--------------------------------------------------
+
+SPEED-TO-LEAD IMPROVEMENT
+
+Insurable.dev AI agents engage prospects instantly via voice or chat.
+
+Benefits include:
+- Eliminating delays caused by manual dialing
+- Reaching leads before competitors
+- Improving conversion likelihood
+
+The platform claims up to 40% faster speed-to-lead.
+
+--------------------------------------------------
+
+STRAIGHT-THROUGH PROCESSING (QUOTE TO POLICY)
+
+Insurable.dev integrates conversational AI with algorithmic underwriting engines to:
+- Provide instant underwriting decisions for simple risks
+- Bind policies in minutes
+- Move from quote to policy without friction
+
+==================================================
+COMPLIANCE AND ENTERPRISE READINESS
+==================================================
+
+Insurable.dev highlights the following trust and readiness signals:
+- NAIC compliance
+- FCC compliance
+- Enterprise-grade security
+- 24/7 system availability
+
+The company states it is trusted by 100+ organizations.
+
+==================================================
+THE DISTRIBUTION CRISIS
+==================================================
+
+Insurable.dev describes a distribution crisis in insurance driven by three core problems:
+1. Speed-to-lead gaps
+2. Rising customer acquisition costs
+3. Failure of static digital forms
+
+--------------------------------------------------
+
+PROBLEM 1: SPEED-TO-LEAD GAP
+
+Insurable.dev claims:
+- Contact rates drop by 400% within the first hour after a lead is generated
+- Typical time to first contact is 24–48 hours
+- Prospects often contact 3–5 competitors before an agent responds
+
+Manual dialing delays reduce conversions and cause lost opportunities.
+
+--------------------------------------------------
+
+PROBLEM 2: THE CAC TRAP
+
+Key claims include:
+- Agents spend approximately 70% of their time on unqualified leads
+- 50–100 calls are required to book one appointment
+- Cost per qualified appointment ranges from $200–$400
+- Annual agent burnout ranges from 30–40%
+
+Premium growth becomes limited by hiring, training, and agent availability.
+
+--------------------------------------------------
+
+PROBLEM 3: FAILURE OF STATIC FORMS
+
+Insurable.dev states that traditional D2C forms:
+- Have 70–85% abandonment rates
+- Achieve only 15–30% completion rates
+- Are confusing due to insurance jargon
+- Are long, rigid, and lack real-time guidance
+
+==================================================
+THE INSURABLE.DEV SOLUTION
+==================================================
+
+Insurable.dev positions its AI agents as a workforce that never sleeps.
+
+These are autonomous intelligent systems capable of complex, empathetic conversations while maintaining strict regulatory compliance.
+
+The platform supports a hybrid distribution model where AI handles scale and humans focus on relationships and high-value sales.
+
+==================================================
+SOLUTION COMPONENTS
+==================================================
+
+DIGITAL SDR
+
+AI-powered sales development representatives that:
+- Run autonomous outbound campaigns
+- Engage leads in seconds
+- Qualify prospects using frameworks such as BANT
+- Ensure perfect script and regulatory compliance
+- Seamlessly hand off to licensed agents
+
+Claimed results:
+- 2x appointment volume
+- 40% faster speed-to-lead
+- 100% lead coverage
+
+--------------------------------------------------
+
+SELF-SERVICE AGENT
+
+A conversational replacement for static forms that:
+- Guides users through applications using natural language
+- Clarifies insurance terms in real time
+- Adapts questions dynamically
+- Integrates with underwriting engines
+- Operates 24/7
+
+Claimed results:
+- 2–3x increase in D2C conversion
+- 70% reduction in abandonment
+- Minutes from quote to policy outcome
+
+--------------------------------------------------
+
+COGNITIVE ENGINE
+
+The underlying intelligence platform that:
+- Orchestrates AI agent workflows
+- Integrates with CRMs, underwriting engines, and policy systems
+- Enforces NAIC, FCC, and state-specific compliance guardrails
+- Provides analytics dashboards and performance insights
+- Ensures enterprise-grade security and privacy
+
+==================================================
+HYBRID DISTRIBUTION MODEL
+==================================================
+
+AI agents handle:
+- Initial outreach
+- Lead qualification at scale
+- 24/7 availability
+- Simple applications and renewals
+- Data collection and validation
+- Appointment scheduling
+- Script compliance
+
+Human agents focus on:
+- Complex financial planning
+- Relationship building
+- Consultative sales
+- Emotional support and trust
+- Multi-product strategies
+- Edge cases and closing
+
+Insurable.dev claims this model makes human agents 3–5x more productive.
+
+==================================================
+USE CASES
+==================================================
+
+USE CASE 1: SMART MARKETING AND ACQUISITION
+
+AI agents act as infinite SDRs to:
+- Eliminate manual dialing
+- Qualify leads instantly
+- Reduce wasted agent time
+- Increase appointment volume
+
+Example impact:
+- Appointments increased from 400 to 850 per month
+- Speed-to-lead reduced from 36 hours to 4 minutes
+- Cost per qualified appointment reduced from $320 to $140
+- Premium per agent increased 2.3x
+
+--------------------------------------------------
+
+USE CASE 2: FRICTIONLESS UNDERWRITING (CHAT-TO-BUY)
+
+Conversational underwriting replaces rigid forms by:
+- Clarifying questions in real time
+- Adapting flows dynamically
+- Instantly validating and binding policies
+
+Example impact:
+- Completion rate increased from 18% to 52%
+- Completion time reduced from 23 minutes to 8 minutes
+- 45% of applications instantly bound
+- Cost per bound policy reduced by 58%
+
+--------------------------------------------------
+
+USE CASE 3: AGENT AUGMENTATION (ON-DEMAND SALES COACH)
+
+AI acts as a real-time compliant sales coach by:
+- Providing instant guidance during calls
+- Using pre-approved, regulation-compliant responses
+- Operating without call recording or voice recognition
+
+Example impact:
+- Ramp time reduced from 9 months to 3.5 months
+- Close rates increased from 12% to 19%
+- Compliance violations reduced by 94%
+- Training costs reduced by 42%
+
+==================================================
+CONTACT INFORMATION
+==================================================
+
+Insurable.dev offers a 25-minute innovation briefing or discovery call.
+
+The session includes:
+- Deep-dive assessment
+- Custom roadmap
+- ROI modeling (appointments, conversions, CAC)
+- Regulatory guidance
+- Live demo
+
+==================================================
+END OF FILE
+==================================================

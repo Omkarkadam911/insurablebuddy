@@ -1,0 +1,409 @@
+================================================================================
+  INSURABLE BUDDY — PROJECT STRUCTURE & FILE REFERENCE
+================================================================================
+  Full-stack AI chatbot for Insurable.dev
+  Stack: React (frontend) + Node.js/Express (backend) + Groq LLM + Pinecone RAG
+================================================================================
+
+
+--------------------------------------------------------------------------------
+  ROOT
+--------------------------------------------------------------------------------
+
+  insurablebuddy-main/
+  ├── package.json
+  ├── .gitignore
+  ├── README.md
+  ├── google-credentials.json
+  ├── backend/
+  └── frontend/
+
+  package.json
+    Root monorepo config. Uses `concurrently` to start both backend and
+    frontend at once with `npm run dev`. Also has `npm run install-all`
+    to install deps in both sub-projects.
+
+  .gitignore
+    Prevents committing: node_modules, .env files, dist/build output,
+    google-credentials.json, and OS/editor files.
+
+  README.md
+    Full project documentation: architecture overview, setup instructions,
+    required env vars, API endpoints, troubleshooting, and deployment notes.
+
+  google-credentials.json
+    Google OAuth2 client credentials (client_id, client_secret, redirect_uris).
+    Used by calendarService and sheetsService to authenticate with Google APIs.
+    NOT committed to git.
+
+
+--------------------------------------------------------------------------------
+  BACKEND
+--------------------------------------------------------------------------------
+
+  backend/
+  ├── package.json
+  ├── .env                          (not committed)
+  ├── .env.example
+  ├── google-credentials.json       (not committed)
+  ├── getToken.cjs
+  ├── knowledge/
+  │   └── insurable-dev-knowledge-base.txt.txt
+  └── src/
+      ├── server.js
+      ├── agents/
+      │   └── reactAgent.js
+      ├── controllers/
+      │   └── chatController.js
+      ├── routes/
+      │   └── chat.js
+      ├── services/
+      │   ├── pineconeService.js
+      │   ├── tavilyService.js
+      │   ├── calendarService.js
+      │   └── sheetsService.js
+      ├── scripts/
+      │   ├── indexKnowledge.js
+      │   └── getRefreshToken.js
+      └── tests/
+          └── agent.test.js
+
+  ----------------------------------------
+  backend/package.json
+    Backend dependencies and scripts.
+    - Runtime deps: express, openai (via Groq), pinecone-database-client,
+      googleapis, axios, dotenv, @xenova/transformers
+    - Dev deps: nodemon
+    - Scripts: dev (nodemon), start, test, index-knowledge
+    - "type": "module" — uses ES6 imports throughout
+
+  backend/.env.example
+    Template showing all required environment variables:
+    GROQ_API_KEY, PINECONE_API_KEY, PINECONE_INDEX_NAME, TAVILY_API_KEY,
+    PORT, ALLOWED_ORIGIN, GOOGLE_SHEET_ID, GOOGLE_CALENDAR_ID,
+    GOOGLE_REFRESH_TOKEN
+
+  backend/google-credentials.json
+    Same as root-level credentials file but scoped to the backend.
+    Referenced by calendarService and sheetsService for OAuth2 auth.
+
+  backend/getToken.cjs
+    CommonJS one-off script to get a Google OAuth refresh token.
+    Generates an auth URL (calendar + sheets scopes), prompts user to
+    paste the auth code, and prints the refresh token to copy into .env.
+    Run once during initial setup.
+
+  backend/knowledge/insurable-dev-knowledge-base.txt.txt
+    The raw company knowledge base text file.
+    Covers: what Insurable.dev does, product features, use cases, compliance,
+    pricing, and industry context. This file is chunked and indexed into
+    Pinecone by the indexKnowledge script so the AI can answer questions
+    about the company from it.
+
+  ----------------------------------------
+  backend/src/server.js
+    Express app entry point.
+    - Sets up CORS (allowed origin from env, defaults to localhost:3000)
+    - Applies in-process rate limiting: 20 requests/min per IP (token bucket)
+    - Caps request body at 16 KB
+    - Mounts the chat router at /api/chat
+    - Provides a GET /health endpoint
+    - Prunes stale rate-limit buckets every 5 minutes
+    - Global error handler that logs internally but returns generic errors
+
+  ----------------------------------------
+  backend/src/routes/chat.js
+    Defines the single API route:
+      POST /api/chat/message  →  chatController.processMessage
+    Thin routing layer; all logic lives in the controller and agent.
+
+  ----------------------------------------
+  backend/src/controllers/chatController.js
+    HTTP request handler for chat messages.
+    - Validates and sanitizes input before touching the agent:
+        • Message max 2000 characters
+        • History max 20 items, 1000 chars each
+        • Only 'user' and 'assistant' roles allowed in history
+        • Strips non-printable control characters
+    - Calls reactAgent() with the cleaned inputs
+    - Returns JSON: { message, needsClarification, sources }
+    - Catches errors and returns a generic 500 response (no internal details)
+
+  ----------------------------------------
+  backend/src/agents/reactAgent.js
+    The core AI brain. Implements the ReAct (Reason + Act) loop.
+
+    HOW IT WORKS:
+      Each turn, the LLM receives a system prompt + the user message +
+      a scratchpad of previous thoughts/tool results. It outputs either:
+        • Thought / Action / Action Input  →  a tool is called
+        • Thought / Final Answer           →  response returned to user
+
+    KEY CONSTANTS:
+      - Model: llama-3.3-70b-versatile (via Groq)
+      - LLM timeout: 30 seconds
+      - Tool timeout: 15 seconds
+      - Max iterations: 5
+      - Max same-tool calls: 2 (prevents loops)
+
+    TOOLS AVAILABLE TO THE LLM:
+      1. search_kb    — search Pinecone knowledge base
+      2. search_web   — search the web via Tavily
+      3. save_booking — book a 30-min call (requires name, email, datetime)
+
+    KEY FUNCTIONS:
+      callLLM()             Calls Groq API with a timeout wrapper
+      executeTool()         Runs the chosen tool and returns observation
+      parseAgentResponse()  Extracts Thought/Action/Input/Answer from LLM text
+      buildSystemPrompt()   Builds the full system prompt with date context,
+                            tool contracts, booking rules, and security rules
+      reactAgent()          Main exported function — runs the loop
+
+    SAFETY GUARDS:
+      - Tool output wrapped in <tool_output> tags to block injection
+      - Duplicate action detection (same tool + input skipped)
+      - Per-session booking dedup Set (email|datetime)
+      - Graceful synthesis if max iterations are hit
+
+  ----------------------------------------
+  backend/src/services/pineconeService.js
+    Handles all interaction with the Pinecone vector database.
+
+    WHAT IT DOES:
+      - Loads the Xenova/all-MiniLM-L6-v2 embedding model locally
+        (no external API key needed for embeddings)
+      - Generates 384-dimensional embeddings with mean pooling + normalization
+      - Queries Pinecone for the top-K most similar chunks to a question
+      - Indexes documents into Pinecone in batches of 100
+
+    KEY FUNCTIONS:
+      generateEmbedding(text)           Embed a string locally
+      searchKnowledgeBase(query, topK)  Semantic search, returns [{text, source}]
+      batchIndexDocuments(docs)         Bulk-index an array of {text, source} docs
+      indexDocument(text, source, id)   Index a single document
+
+  ----------------------------------------
+  backend/src/services/tavilyService.js
+    Wrapper around the Tavily web search API.
+
+    WHAT IT DOES:
+      - Sends a search query to Tavily with a 12-second timeout
+      - Validates API key presence before making the request
+      - Returns up to 5 results: [{title, url, content, score}]
+      - Returns a structured error field on timeout, bad key, or rate limit
+      - Used by reactAgent when the knowledge base has no relevant answer
+
+    KEY FUNCTIONS:
+      searchWeb(query, maxResults)  Perform a web search, returns results array
+
+  ----------------------------------------
+  backend/src/services/calendarService.js
+    Handles Google Calendar event creation and booking validation.
+
+    WHAT IT DOES:
+      - Authenticates with Google via OAuth2 using credentials + refresh token
+      - Validates booking inputs: name length, email format (requires TLD),
+        ISO datetime format, future date, business hours (9am–5pm), weekdays only
+      - Checks for conflicts by querying existing calendar events in the slot
+      - Creates a 30-minute calendar event and adds the user as an attendee
+      - Returns the created event object including htmlLink
+
+    KEY FUNCTIONS:
+      validateBookingInput(name, email, datetime)  Returns array of error strings
+      bookCall(name, email, datetime)              Creates the calendar event
+
+    NOTE:
+      BOOKING_TIMEZONE is set to "Asia/Kolkata" but business hours logic
+      references Europe/London. Verify this matches your target timezone.
+
+  ----------------------------------------
+  backend/src/services/sheetsService.js
+    Logs every successful booking to a Google Sheets spreadsheet.
+
+    WHAT IT DOES:
+      - Authenticates with Google via OAuth2 (same credentials as calendar)
+      - Validates inputs before writing (name, email, datetime, calendar link)
+      - Sanitizes cell values to block spreadsheet formula injection:
+          Strips control characters + prefixes =, +, -, @ with a single quote
+          Uses RAW input mode (not USER_ENTERED) as a second layer
+      - Appends a row: [timestamp, name, email, datetime, calendarLink]
+      - Timestamp is generated server-side in Europe/London timezone
+
+    KEY FUNCTIONS:
+      sanitizeCell(value)                             Strip/prefix dangerous chars
+      logBooking(name, email, datetime, calLink)      Append row to sheet
+
+  ----------------------------------------
+  backend/src/scripts/indexKnowledge.js
+    One-off script to index the knowledge base into Pinecone.
+    Run with: npm run index-knowledge
+
+    WHAT IT DOES:
+      - Reads all .txt and .md files from /backend/knowledge/
+      - Splits content into chunks (max 1000 chars, split on paragraph breaks)
+      - Calls batchIndexDocuments() to embed and upsert into Pinecone
+      - Creates the knowledge/ directory if it doesn't exist
+      - Warns if no files are found
+
+  ----------------------------------------
+  backend/src/scripts/getRefreshToken.js
+    ES module version of the OAuth token flow (vs getToken.cjs at root).
+    Generates an auth URL with calendar scope, prompts for auth code,
+    and prints the refresh token. Run once during setup.
+
+  ----------------------------------------
+  backend/src/tests/agent.test.js
+    Comprehensive test suite using Node 18+ built-in test runner.
+    Run with: npm test
+
+    TEST GROUPS (50+ test cases):
+      1. parseAgentResponse      Parsing Thought/Action/Answer from LLM output,
+                                 including prompt injection scenarios
+      2. validateBookingInput    Email format, datetime format, business hours,
+                                 formula injection attempts in name/email fields
+      3. chatController          Input sanitization, length limits, role filtering,
+                                 control character stripping
+      4. sanitizeCell            Formula injection prevention (=, +, -, @ prefix)
+      5. Prompt injection        Documents known adversarial input patterns
+      6. Booking deduplication   Prevents double-booking in same session
+      7. Rate limiter logic      Token bucket behavior
+      8. withTimeout utility     Timeout rejection behavior
+
+    All external APIs are mocked — tests run without live credentials.
+
+
+--------------------------------------------------------------------------------
+  FRONTEND
+--------------------------------------------------------------------------------
+
+  frontend/
+  ├── package.json
+  ├── vite.config.js
+  ├── index.html
+  └── src/
+      ├── main.jsx
+      ├── App.jsx
+      ├── App.css
+      └── index.css
+
+  ----------------------------------------
+  frontend/package.json
+    Frontend dependencies and scripts.
+    - Runtime: react, react-dom, axios, react-markdown
+    - Dev: vite, @vitejs/plugin-react
+    - "type": "module"
+    - Scripts: dev (port 3000), build, preview
+
+  frontend/vite.config.js
+    Vite dev server configuration.
+    - Enables React fast-refresh via @vitejs/plugin-react
+    - Dev server runs on port 3000
+
+  frontend/index.html
+    Standard HTML5 shell. Single <div id="root"> entry point.
+    Loads /src/main.jsx as the module entry.
+
+  ----------------------------------------
+  frontend/src/main.jsx
+    React 18 entry point. Renders <App /> inside React.StrictMode
+    into the #root div.
+
+  ----------------------------------------
+  frontend/src/App.jsx
+    The entire chat UI in a single component.
+
+    STATE:
+      messages          Array of {role, content, sources} objects
+      inputValue        Controlled input field value
+      isLoading         Disables input + shows typing indicator
+
+    WHAT IT DOES:
+      - Renders a scrollable message list with user/assistant bubbles
+      - Auto-scrolls to the latest message on each update
+      - Sends the last 10 messages as conversation history to the backend
+      - Displays sources (URLs) below assistant messages when present
+      - Renders assistant responses as Markdown via react-markdown
+      - Shows a 3-dot bouncing typing indicator while waiting
+      - Handles errors with a friendly fallback message
+      - POST to: http://localhost:3001/api/chat/message
+
+  ----------------------------------------
+  frontend/src/App.css
+    All component styles for the chat UI.
+
+    DESIGN:
+      - Dark background (#1a1a2e) with gold accents (#c9a86c)
+      - Chat container: centered, max-width 800px, flexbox column
+      - User messages: right-aligned
+      - Assistant messages: left-aligned with shadow
+      - Message max-width: 70% desktop / 85% mobile
+      - Typing indicator: 3 bouncing dots animation
+      - Message fade-in animation (0.3s)
+      - Custom gold scrollbar
+      - Responsive breakpoint at 768px
+
+  frontend/src/index.css
+    Global baseline styles.
+    - System font stack applied to body/html
+    - Background: purple gradient (overridden by App.css dark theme on the
+      chat container itself)
+
+
+--------------------------------------------------------------------------------
+  DATA FLOW SUMMARY
+--------------------------------------------------------------------------------
+
+  1. User types a message in App.jsx
+  2. POST /api/chat/message sent to Express (port 3001)
+  3. chatController.js sanitizes and validates the input
+  4. reactAgent.js starts the ReAct loop:
+       a. Build system prompt (date context + rules)
+       b. Call Groq LLM → parse Thought/Action/Answer
+       c. If Action → run tool (search_kb / search_web / save_booking)
+       d. Wrap tool result in <tool_output>, append to scratchpad
+       e. Loop (max 5 iterations) until Final Answer
+  5. Final Answer returned as JSON { message, sources }
+  6. App.jsx displays the message (Markdown-rendered) with sources
+
+  TOOL PATHS:
+    search_kb    → pineconeService → local embedding → Pinecone query
+    search_web   → tavilyService   → Tavily API → results
+    save_booking → calendarService → Google Calendar event created
+                 → sheetsService   → row appended to Google Sheets
+
+
+--------------------------------------------------------------------------------
+  ENVIRONMENT VARIABLES (all in backend/.env)
+--------------------------------------------------------------------------------
+
+  GROQ_API_KEY          LLM provider (Groq, llama-3.3-70b-versatile)
+  PINECONE_API_KEY      Vector database
+  PINECONE_INDEX_NAME   Name of the Pinecone index to query/write
+  TAVILY_API_KEY        Web search API
+  GOOGLE_REFRESH_TOKEN  OAuth2 refresh token for Calendar + Sheets
+  GOOGLE_SHEET_ID       ID of the Google Sheet for booking logs
+  GOOGLE_CALENDAR_ID    Calendar to book into (defaults to "primary")
+  PORT                  Backend port (defaults to 3001)
+  ALLOWED_ORIGIN        CORS origin (defaults to http://localhost:3000)
+
+
+--------------------------------------------------------------------------------
+  QUICK START
+--------------------------------------------------------------------------------
+
+  1. Copy backend/.env.example → backend/.env and fill in all keys
+  2. Place google-credentials.json in /backend/
+  3. Run getToken.cjs (or getRefreshToken.js) once to get GOOGLE_REFRESH_TOKEN
+  4. npm run install-all        (install all deps)
+  5. npm run index-knowledge    (index knowledge base into Pinecone — once)
+  6. npm run dev                (starts both frontend and backend)
+
+  Frontend: http://localhost:3000
+  Backend:  http://localhost:3001
+
+
+================================================================================
+  END OF FILE
+================================================================================
+REMAINING BUGS TO FIX
+All known bugs resolved.

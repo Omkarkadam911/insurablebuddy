@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Claude Code local settings
+.claude/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Knowledge base (optional - uncomment if you don't want to commit)
+# backend/knowledge/
+
+# Google service account credentials (never commit this)
+google-credentials.json
+backend/google-credentials.json
